@@ -170,3 +170,26 @@
     transform: translateX(100%);
   }
 }
+
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Utilities */
+.animate-gradient-x {
+  animation: gradient-x 3s ease infinite;
+  background-size: 200% 200%;
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.bg-size-200 {
+  background-size: 200% 200%;
+}
