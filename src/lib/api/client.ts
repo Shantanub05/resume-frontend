@@ -56,18 +56,18 @@ class ApiClient {
 
   // Guest Session API
   async createGuestSession(sessionName?: string): Promise<GuestSessionResponse> {
-    return this.request('/api/guest/session', {
+    return this.request('/guest/session', {
       method: 'POST',
-      body: JSON.stringify({ sessionName }),
+      body: JSON.stringify({ name: sessionName }),
     })
   }
 
   async getSessionInfo(): Promise<SessionInfoResponse> {
-    return this.request('/api/guest/session/info')
+    return this.request('/guest/session/info')
   }
 
   async canUpload(): Promise<CanUploadResponse> {
-    return this.request('/api/guest/session/can-upload')
+    return this.request('/guest/session/can-upload')
   }
 
   // Resume API
@@ -78,7 +78,7 @@ class ApiClient {
       formData.append('title', title)
     }
 
-    return this.request('/api/resumes/upload', {
+    return this.request('/resumes/upload', {
       method: 'POST',
       body: formData,
       headers: {}, // Remove Content-Type to let browser set it for multipart
@@ -86,26 +86,26 @@ class ApiClient {
   }
 
   async getMyResumes(): Promise<MyResumesResponse> {
-    return this.request('/api/resumes/my-resumes')
+    return this.request('/resumes/my-resumes')
   }
 
   async getResume(resumeId: string): Promise<ResumeDetailResponse> {
-    return this.request(`/api/resumes/${resumeId}`)
+    return this.request(`/resumes/${resumeId}`)
   }
 
   async analyzeResume(resumeId: string, jobDescription?: string): Promise<AnalysisResponse> {
-    return this.request(`/api/resumes/${resumeId}/analyze`, {
+    return this.request(`/resumes/${resumeId}/analyze`, {
       method: 'POST',
       body: JSON.stringify({ jobDescription }),
     })
   }
 
   async getAnalysisResult(analysisId: string): Promise<AnalysisResultResponse> {
-    return this.request(`/api/resumes/analysis/${analysisId}`)
+    return this.request(`/resumes/analysis/${analysisId}`)
   }
 
   async getQuickAnalysis(resumeId: string): Promise<QuickAnalysisResponse> {
-    return this.request(`/api/resumes/${resumeId}/quick-analysis`)
+    return this.request(`/resumes/${resumeId}/quick-analysis`)
   }
 }
 
