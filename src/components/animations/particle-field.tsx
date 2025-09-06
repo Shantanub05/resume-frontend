@@ -15,7 +15,7 @@ interface Particle {
 
 export function ParticleField() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const animationFrameId = useRef<number>()
+  const animationFrameId = useRef<number | undefined>(undefined)
   const particles = useRef<Particle[]>([])
 
   useEffect(() => {

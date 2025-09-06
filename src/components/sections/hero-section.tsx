@@ -99,7 +99,7 @@ export function HeroSection() {
               transition={{ delay: 1.0 }}
               className="grid grid-cols-3 gap-6 pt-8"
             >
-              {stats.map((stat, index) => (
+              {stats.map((stat) => (
                 <motion.div
                   key={stat.label}
                   whileHover={{ scale: 1.05 }}

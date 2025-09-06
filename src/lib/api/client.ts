@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
 
 class ApiClient {
   private baseURL: string
@@ -110,7 +110,7 @@ class ApiClient {
 }
 
 // API Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean
   data: T
   message: string
@@ -178,7 +178,7 @@ export interface ResumeDetailResponse extends ApiResponse {
     fileSize: number
     extractedText: string
     createdAt: string
-    analysis: any | null
+    analysis: Record<string, unknown> | null
   }
 }
 
@@ -198,8 +198,8 @@ export interface AnalysisResultResponse extends ApiResponse {
     strengths: string[]
     improvements: string[]
     missingSkills: string[]
-    keywordMatch: any
-    sectionsAnalysis: any
+    keywordMatch: Record<string, unknown>
+    sectionsAnalysis: Record<string, unknown>
     resume: {
       id: string
       title: string
@@ -208,7 +208,7 @@ export interface AnalysisResultResponse extends ApiResponse {
 }
 
 export interface QuickAnalysisResponse extends ApiResponse {
-  data: any
+  data: Record<string, unknown>
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)

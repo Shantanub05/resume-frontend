@@ -1,12 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from './client'
-import type { 
-  GuestSessionResponse, 
-  SessionInfoResponse,
-  UploadResumeResponse,
-  MyResumesResponse,
-  AnalysisResponse,
-  AnalysisResultResponse 
+import { 
+  apiClient,
+  type UploadResumeResponse,
+  type GuestSessionResponse
 } from './client'
 
 // Query Keys
@@ -25,7 +21,7 @@ export function useSessionInfo(enabled = true) {
     queryFn: () => apiClient.getSessionInfo(),
     enabled,
     refetchInterval: 60000, // Refresh every minute for timer
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: Error) => {
       // Don't retry if token is invalid
       if (error?.message?.includes('token')) return false
       return failureCount < 3
@@ -63,13 +59,7 @@ export function useAnalysisResult(analysisId: string, enabled = true) {
     queryKey: queryKeys.analysis(analysisId),
     queryFn: () => apiClient.getAnalysisResult(analysisId),
     enabled: enabled && !!analysisId,
-    refetchInterval: (data) => {
-      // Poll every 3 seconds if analysis is still processing
-      if (data?.data.status === 'PROCESSING' || data?.data.status === 'PENDING') {
-        return 3000
-      }
-      return false
-    },
+    refetchInterval: 5000, // Poll every 5 seconds for analysis updates
   })
 }
 
@@ -79,7 +69,7 @@ export function useCreateGuestSession() {
   
   return useMutation({
     mutationFn: (sessionName?: string) => apiClient.createGuestSession(sessionName),
-    onSuccess: (data) => {
+    onSuccess: (data: GuestSessionResponse) => {
       // Store token in localStorage
       localStorage.setItem('guest-token', data.data.token)
       
@@ -105,7 +95,7 @@ export function useUploadResume() {
   return useMutation({
     mutationFn: ({ file, title }: { file: File; title?: string }) =>
       apiClient.uploadResume(file, title),
-    onSuccess: (data) => {
+    onSuccess: (_data: UploadResumeResponse) => {
       // Invalidate resumes list to refetch
       queryClient.invalidateQueries({ queryKey: queryKeys.myResumes })
       
@@ -122,7 +112,7 @@ export function useAnalyzeResume() {
   return useMutation({
     mutationFn: ({ resumeId, jobDescription }: { resumeId: string; jobDescription?: string }) =>
       apiClient.analyzeResume(resumeId, jobDescription),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate resume data to show new analysis
       queryClient.invalidateQueries({ queryKey: queryKeys.resume(variables.resumeId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.myResumes })

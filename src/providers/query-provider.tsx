@@ -12,9 +12,9 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
           queries: {
             staleTime: 60 * 1000, // 1 minute
             refetchOnWindowFocus: false,
-            retry: (failureCount, error: any) => {
+            retry: (failureCount, error: Error & { status?: number }) => {
               // Don't retry on 4xx errors except 408, 409, 429
-              if (error?.status >= 400 && error?.status < 500) {
+              if (error?.status && error.status >= 400 && error.status < 500) {
                 if ([408, 409, 429].includes(error.status)) {
                   return failureCount < 3
                 }
@@ -24,8 +24,8 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
             },
           },
           mutations: {
-            retry: (failureCount, error: any) => {
-              if (error?.status >= 400 && error?.status < 500) {
+            retry: (failureCount, error: Error & { status?: number }) => {
+              if (error?.status && error.status >= 400 && error.status < 500) {
                 return false // Don't retry client errors
               }
               return failureCount < 2

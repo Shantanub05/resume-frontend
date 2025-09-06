@@ -12,9 +12,11 @@ interface GradientTextProps {
 export function GradientText({ children, className, animate = true }: GradientTextProps) {
   return (
     <motion.div
-      initial={animate ? { opacity: 0, y: 20 } : undefined}
-      animate={animate ? { opacity: 1, y: 0 } : undefined}
-      transition={animate ? { duration: 0.8, ease: 'easeOut' } : undefined}
+      {...(animate && {
+        initial: { opacity: 0, y: 20 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.8, ease: 'easeOut' }
+      })}
       className={cn(
         'bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent bg-size-200 animate-gradient-x',
         className
