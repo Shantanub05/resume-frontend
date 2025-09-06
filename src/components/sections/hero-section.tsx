@@ -1,10 +1,13 @@
 'use client'
 
 import { motion } from 'motion/react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { GradientText, TypingText } from '@/components/animations/gradient-text'
 import { FloatingResume } from '@/components/animations/floating-resume'
 import { ParticleField } from '@/components/animations/particle-field'
+import { GuestSessionModal } from '@/components/modals/guest-session-modal'
 import { ArrowRight, Sparkles, Zap, TrendingUp } from 'lucide-react'
 
 const stats = [
@@ -14,6 +17,24 @@ const stats = [
 ]
 
 export function HeroSection() {
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false)
+  const router = useRouter()
+
+  const handleStartAnalysis = () => {
+    setIsGuestModalOpen(true)
+  }
+
+  const handleSessionCreated = (sessionData: { id: string; name: string; expiresAt: string }) => {
+    setIsGuestModalOpen(false)
+    // Navigate to dashboard with session data
+    router.push('/dashboard')
+  }
+
+  const handleWatchDemo = () => {
+    // Scroll to features or navigate to demo page
+    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Elements */}
@@ -74,6 +95,7 @@ export function HeroSection() {
               className="flex flex-col sm:flex-row gap-4"
             >
               <Button
+                onClick={handleStartAnalysis}
                 size="lg"
                 variant="gradient"
                 className="group px-8 py-4 text-lg font-semibold shadow-2xl shadow-blue-500/25"
@@ -84,6 +106,7 @@ export function HeroSection() {
               </Button>
               
               <Button
+                onClick={handleWatchDemo}
                 size="lg"
                 variant="glass"
                 className="px-8 py-4 text-lg font-medium text-white"
@@ -146,6 +169,13 @@ export function HeroSection() {
           />
         </motion.div>
       </motion.div>
+
+      {/* Guest Session Modal */}
+      <GuestSessionModal
+        isOpen={isGuestModalOpen}
+        onClose={() => setIsGuestModalOpen(false)}
+        onSessionCreated={handleSessionCreated}
+      />
     </section>
   )
 }
