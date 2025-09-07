@@ -2,22 +2,28 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Upload, FileText, X, Check, AlertCircle } from 'lucide-react'
+import { Upload, FileText, Trash2, AlertCircle, Zap, Loader2 } from 'lucide-react'
 
 interface FileUploadZoneProps {
   onFilesSelected: (files: File[]) => void
+  onProcessFiles?: (files: File[]) => void
+  isProcessing?: boolean
   maxFiles?: number
   acceptedTypes?: string[]
   maxSizeBytes?: number
   className?: string
+  isReupload?: boolean
 }
 
 export function FileUploadZone({
   onFilesSelected,
+  onProcessFiles,
+  isProcessing = false,
   maxFiles = 3,
   acceptedTypes = ['.pdf', '.doc', '.docx'],
   maxSizeBytes = 10 * 1024 * 1024, // 10MB
   className = '',
+  isReupload = false,
 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
@@ -44,40 +50,53 @@ export function FileUploadZone({
     const newFiles: File[] = []
     const newErrors: string[] = []
 
-    // Check total file count
-    if (uploadedFiles.length + fileArray.length > maxFiles) {
-      newErrors.push(`You can only upload up to ${maxFiles} files.`)
-      setErrors(newErrors)
-      return
-    }
-
-    // Validate each file
-    fileArray.forEach(file => {
-      const error = validateFile(file)
-      if (error) {
-        newErrors.push(error)
-      } else {
-        // Check for duplicates
-        const isDuplicate = uploadedFiles.some(existing => 
-          existing.name === file.name && existing.size === file.size
-        )
-        if (!isDuplicate) {
-          newFiles.push(file)
-        }
+    if (isReupload) {
+      // For re-upload, we only allow one file at a time, which replaces the old one.
+      if (fileArray.length > 1) {
+        newErrors.push('You can only replace with one file at a time.');
+        setErrors(newErrors);
+        return;
       }
-    })
+      const file = fileArray[0];
+      const error = validateFile(file);
+      if (error) {
+        newErrors.push(error);
+      } else {
+        newFiles.push(file);
+      }
+    } else {
+      // Original logic for new uploads
+      if (uploadedFiles.length + fileArray.length > maxFiles) {
+        newErrors.push(`You can only upload up to ${maxFiles} files.`)
+        setErrors(newErrors)
+        return
+      }
+
+      fileArray.forEach(file => {
+        const error = validateFile(file);
+        if (error) {
+          newErrors.push(error);
+        } else {
+          const isDuplicate = uploadedFiles.some(existing => 
+            existing.name === file.name && existing.size === file.size
+          )
+          if (!isDuplicate) {
+            newFiles.push(file)
+          }
+        }
+      });
+    }
 
     if (newErrors.length > 0) {
       setErrors(newErrors)
       return
     }
 
-    // Add valid files
-    const updatedFiles = [...uploadedFiles, ...newFiles]
+    const updatedFiles = isReupload ? newFiles : [...uploadedFiles, ...newFiles];
     setUploadedFiles(updatedFiles)
     onFilesSelected(updatedFiles)
     setErrors([])
-  }, [uploadedFiles, maxFiles, validateFile, onFilesSelected])
+  }, [uploadedFiles, maxFiles, validateFile, onFilesSelected, isReupload])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -184,17 +203,25 @@ export function FileUploadZone({
           </motion.div>
 
           <h3 className="text-lg font-semibold text-white mb-2">
-            {isDragging ? 'Drop your files here' : 'Upload your resume'}
+            {isDragging 
+              ? 'Drop your files here' 
+              : isReupload 
+                ? 'Replace your resume' 
+                : 'Upload your resume'
+            }
           </h3>
           
           <p className="text-white/60 mb-4">
-            Drag and drop your files here, or click to browse
+            {isReupload 
+              ? 'Upload a new file to replace your existing resume'
+              : 'Drag and drop your files here, or click to browse'
+            }
           </p>
 
           <div className="text-sm text-white/50 space-y-1">
             <p>Supported formats: {acceptedTypes.join(', ')}</p>
             <p>Maximum file size: {Math.round(maxSizeBytes / (1024 * 1024))}MB</p>
-            <p>Upload up to {maxFiles} files</p>
+            <p>{isReupload ? 'Replace your existing resume' : `Upload up to ${maxFiles} files`}</p>
           </div>
         </div>
 
@@ -266,23 +293,49 @@ export function FileUploadZone({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
-                      <Check className="w-3 h-3 text-green-400" />
-                    </div>
-                    
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         removeFile(file)
                       }}
-                      className="w-6 h-6 bg-red-500/20 hover:bg-red-500/30 rounded-full flex items-center justify-center transition-colors"
+                      className="w-8 h-8 bg-red-500/20 hover:bg-red-500/30 rounded-lg flex items-center justify-center transition-colors group"
+                      disabled={isProcessing}
                     >
-                      <X className="w-3 h-3 text-red-400" />
+                      <Trash2 className="w-4 h-4 text-red-400 group-hover:text-red-300" />
                     </button>
                   </div>
                 </motion.div>
               ))}
             </div>
+
+            {/* Process Button */}
+            {onProcessFiles && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="pt-4 flex justify-center"
+              >
+                <button
+                  onClick={() => onProcessFiles(uploadedFiles)}
+                  disabled={isProcessing}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Zap className="w-5 h-5" />
+                  )}
+                  {isProcessing 
+                    ? isReupload 
+                      ? 'Replacing Resume...'
+                      : `Processing ${uploadedFiles.length} resume${uploadedFiles.length > 1 ? 's' : ''}...`
+                    : isReupload
+                      ? 'Replace & Analyze Resume'
+                      : `Analyze Resume${uploadedFiles.length > 1 ? 's' : ''}`
+                  }
+                </button>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

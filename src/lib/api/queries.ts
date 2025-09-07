@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { 
   apiClient,
   type UploadResumeResponse,
   type GuestSessionResponse
 } from './client'
+import { toast } from 'sonner'
 
 // Query Keys
 export const queryKeys = {
@@ -30,19 +32,38 @@ export function useSessionInfo(enabled = true) {
 }
 
 export function useCanUpload() {
+  const guestToken = useGuestToken()
+  
   return useQuery({
     queryKey: queryKeys.canUpload,
     queryFn: () => apiClient.canUpload(),
+    enabled: !!guestToken, // Only run if we have a token
     staleTime: 30000, // 30 seconds
+    retry: (failureCount, error: Error) => {
+      // Don't retry if no token or token invalid
+      if (error?.message?.includes('token') || !guestToken) return false
+      return failureCount < 3
+    },
   })
 }
 
 // Resume Queries
 export function useMyResumes() {
+  const guestToken = useGuestToken()
+  
   return useQuery({
     queryKey: queryKeys.myResumes,
     queryFn: () => apiClient.getMyResumes(),
-    staleTime: 60000, // 1 minute
+    enabled: !!guestToken, // Only run if we have a token
+    staleTime: 0, // Always consider data stale for real-time updates
+    gcTime: 0, // Don't cache for too long to ensure fresh data
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true,
+    retry: (failureCount, error: Error) => {
+      // Don't retry if no token or token invalid
+      if (error?.message?.includes('token') || !guestToken) return false
+      return failureCount < 3
+    },
   })
 }
 
@@ -59,7 +80,21 @@ export function useAnalysisResult(analysisId: string, enabled = true) {
     queryKey: queryKeys.analysis(analysisId),
     queryFn: () => apiClient.getAnalysisResult(analysisId),
     enabled: enabled && !!analysisId,
-    refetchInterval: 5000, // Poll every 5 seconds for analysis updates
+    refetchInterval: (data) => {
+      // If analysis is still processing, poll every 3 seconds
+      const analysis = data?.data
+      const isProcessing = analysis?.status && ['PENDING', 'PROCESSING'].includes(analysis.status)
+      
+      console.log('Analysis polling check:', {
+        analysisId,
+        status: analysis?.status,
+        isProcessing,
+        shouldContinuePolling: isProcessing
+      })
+      
+      return isProcessing ? 3000 : false // 3 seconds if processing, stop when complete
+    },
+    staleTime: 0, // Always refetch to get latest status
   })
 }
 
@@ -70,20 +105,36 @@ export function useCreateGuestSession() {
   return useMutation({
     mutationFn: (sessionName?: string) => apiClient.createGuestSession(sessionName),
     onSuccess: (data: GuestSessionResponse) => {
+      console.log('createGuestSession success:', data)
+      console.log('Storing token:', data.data.data.token)
       // Store token in localStorage
-      localStorage.setItem('guest-token', data.data.token)
+      localStorage.setItem('guest-token', data.data.data.token)
       
-      // Update session info cache
+      // Verify it was stored
+      console.log('Token stored, verification:', localStorage.getItem('guest-token'))
+      
+      // Trigger custom event to update useGuestToken hook
+      window.dispatchEvent(new Event('guest-token-updated'))
+      console.log('guest-token-updated event dispatched')
+      
+      // Update session info cache with complete data structure
       queryClient.setQueryData(queryKeys.sessionInfo, {
         success: true,
         data: {
           uploadsUsed: 0,
-          uploadsRemaining: data.data.uploadsRemaining,
-          uploadsLimit: data.data.uploadsLimit,
-          expiresAt: data.data.expiresAt,
-          timeRemaining: '24 hours',
+          uploadsRemaining: data.data.data.uploadsRemaining || 3,
+          uploadsLimit: data.data.data.uploadsLimit || 3,
+          reuploadAttempts: 0,
+          reuploadsRemaining: data.data.data.uploadsLimit || 3,
+          totalOperations: 0,
+          operationsRemaining: data.data.data.uploadsLimit || 3,
+          expiresAt: data.data.data.expiresAt,
+          timeRemaining: '24h',
         },
       })
+      
+      // Also invalidate session info to trigger fresh fetch
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessionInfo })
     },
   })
 }
@@ -95,13 +146,48 @@ export function useUploadResume() {
   return useMutation({
     mutationFn: ({ file, title }: { file: File; title?: string }) =>
       apiClient.uploadResume(file, title),
-    onSuccess: (_data: UploadResumeResponse) => {
+    onSuccess: (data: UploadResumeResponse) => {
+      console.log('Upload successful, new session info:', data.data.sessionInfo);
       // Invalidate resumes list to refetch
       queryClient.invalidateQueries({ queryKey: queryKeys.myResumes })
       
       // Update session info with new upload count
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessionInfo })
+      queryClient.setQueryData(queryKeys.sessionInfo, {
+          success: true,
+          data: data.data.sessionInfo,
+          message: 'from upload mutation'
+      })
       queryClient.invalidateQueries({ queryKey: queryKeys.canUpload })
+    },
+    onError: (error: Error) => {
+      console.error('Upload mutation error:', error)
+      // Let the component handle the toast to avoid duplicate messages
+    },
+  })
+}
+
+export function useReuploadResume() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ resumeId, file, title }: { resumeId: string; file: File; title?: string }) =>
+      apiClient.reuploadResume(resumeId, file, title),
+    onSuccess: (data: UploadResumeResponse) => {
+      console.log('Reupload successful, new session info:', data.data.sessionInfo);
+      // Invalidate resumes list to refetch
+      queryClient.invalidateQueries({ queryKey: queryKeys.myResumes })
+      
+      // Update session info with new reupload count
+      queryClient.setQueryData(queryKeys.sessionInfo, {
+          success: true,
+          data: data.data.sessionInfo,
+          message: 'from reupload mutation'
+      })
+      queryClient.invalidateQueries({ queryKey: queryKeys.canUpload })
+    },
+    onError: (error: Error) => {
+      console.error('Reupload mutation error:', error)
+      // Let the component handle the toast to avoid duplicate messages
     },
   })
 }
@@ -115,21 +201,66 @@ export function useAnalyzeResume() {
     onSuccess: (_data, variables) => {
       // Invalidate resume data to show new analysis
       queryClient.invalidateQueries({ queryKey: queryKeys.resume(variables.resumeId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.myResumes })
+      
+      // Force refetch the resumes list to immediately show the new analysis status
+      queryClient.refetchQueries({ queryKey: queryKeys.myResumes })
+      
+      console.log('Analysis mutation completed, forcing resumes refetch')
     },
   })
 }
 
 // Utility Hooks
 export function useGuestToken() {
-  return localStorage.getItem('guest-token')
+  const [token, setToken] = useState<string | null>(null)
+  
+  useEffect(() => {
+    // Set initial token
+    const storedToken = localStorage.getItem('guest-token')
+    console.log('useGuestToken: Initial token from localStorage:', storedToken)
+    console.log('useGuestToken: All localStorage keys:', Object.keys(localStorage))
+    setToken(storedToken)
+    
+    // Listen for localStorage changes (including from other tabs/windows)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'guest-token') {
+        setToken(e.newValue)
+      }
+    }
+    
+    // Listen for custom events (when token is set programmatically)
+    const handleTokenUpdate = () => {
+      const newToken = localStorage.getItem('guest-token')
+      console.log('useGuestToken: handleTokenUpdate triggered, new token:', newToken)
+      setToken(newToken)
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('guest-token-updated', handleTokenUpdate)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('guest-token-updated', handleTokenUpdate)
+    }
+  }, [])
+  
+  return token
 }
 
 export function useIsSessionValid() {
-  const { data: sessionInfo, isError } = useSessionInfo()
+  const guestToken = useGuestToken()
+  const { data: sessionInfo, isError, error } = useSessionInfo(!!guestToken)
+  
+  console.log('useIsSessionValid:', { 
+    guestToken: !!guestToken, 
+    sessionInfo: sessionInfo?.data,
+    isError,
+    error,
+    isValid: !!guestToken && !isError && !!sessionInfo?.data
+  })
   
   return {
-    isValid: !isError && !!sessionInfo?.data,
+    isValid: !!guestToken && !isError && !!sessionInfo?.data,
     sessionInfo: sessionInfo?.data,
   }
 }

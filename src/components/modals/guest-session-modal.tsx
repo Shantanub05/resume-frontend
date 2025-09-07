@@ -35,9 +35,9 @@ export function GuestSessionModal({ isOpen, onClose, onSessionCreated }: GuestSe
     createGuestSessionMutation.mutate(name.trim(), {
       onSuccess: (response) => {
         const session = {
-          id: response.data.token.slice(-8), // Use last 8 chars of token as ID
+          id: response.data.data.token.slice(-8), // Use last 8 chars of token as ID
           name: name.trim(),
-          expiresAt: response.data.expiresAt,
+          expiresAt: response.data.data.expiresAt,
         }
         
         setSessionData(session)
