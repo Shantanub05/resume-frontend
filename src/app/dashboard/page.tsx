@@ -4,7 +4,7 @@ import { motion } from 'motion/react'
 import { FileText, TrendingUp, Clock, Star, Upload, BarChart3, Users, Zap, Loader2 } from 'lucide-react'
 import { DashboardCard } from '@/components/dashboard/dashboard-card'
 import { ProgressRing } from '@/components/charts/progress-ring'
-import { FileUploadZone } from '@/components/upload/file-upload-zone'
+import { EnhancedFileUpload } from '@/components/upload/enhanced-file-upload'
 import { GuestSessionModal } from '@/components/modals/guest-session-modal'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -85,7 +85,7 @@ export default function DashboardPage() {
     // Files are selected but not yet processed
   }
 
-  const handleProcessFiles = async (files: File[]) => {
+  const handleProcessFiles = async (files: File[], jobDescription?: string) => {
     if (files.length === 0) return
     
     // If no guest session, create one first
@@ -146,14 +146,15 @@ export default function DashboardPage() {
         
         // Trigger analysis after successful upload/reupload
         if (resumeId) {
-          console.log('Starting analysis for resume:', resumeId)
+          console.log('Starting analysis for resume:', resumeId, jobDescription ? 'with job description' : 'without job description')
           
           // Add to analyzing set to show spinner
           setAnalyzingResumes(prev => new Set([...prev, resumeId]))
           
           try {
             const analysisResult = await analyzeResumeMutation.mutateAsync({ 
-              resumeId 
+              resumeId,
+              jobDescription: jobDescription || undefined
             })
             console.log('Analysis started:', analysisResult)
           } catch (error) {
@@ -186,6 +187,7 @@ export default function DashboardPage() {
     setIsGuestModalOpen(false)
     // The session will be automatically detected by the useIsSessionValid hook
   }
+
 
   // Calculate actual stats from resumes data - only if we have data loaded
   const dashboardData = (hasResumes && !isLoadingResumes) ? {
@@ -293,7 +295,7 @@ export default function DashboardPage() {
                 {hasResumes ? 'Replace Your Resume' : 'Upload New Resume'}
               </h2>
               <div data-upload-zone>
-                <FileUploadZone 
+                <EnhancedFileUpload 
                   onFilesSelected={handleFilesSelected} 
                   onProcessFiles={handleProcessFiles}
                   isProcessing={processingFiles}
@@ -323,7 +325,6 @@ export default function DashboardPage() {
               )}
             </motion.div>
 
-            
 
             {/* Recent Resumes */}
             {hasResumes ? (

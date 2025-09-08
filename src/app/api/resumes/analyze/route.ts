@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { resumeId, jobDescription } = body
     
+    console.log('API Proxy: Request body received:', { resumeId, jobDescription: jobDescription ? 'present' : 'not provided' })
+    
     if (!resumeId) {
       return NextResponse.json(
         { error: 'Resume ID is required' },
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('API Proxy: Forwarding analysis request for resume:', resumeId)
+    console.log('API Proxy: Forwarding analysis request for resume:', resumeId, jobDescription ? 'with job description' : 'without job description')
 
     const response = await fetch(`${BACKEND_URL}/resumes/${resumeId}/analyze`, {
       method: 'POST',

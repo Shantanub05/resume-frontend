@@ -2,11 +2,13 @@
 
 import { motion } from 'motion/react'
 import { Award, TrendingUp, Target, BarChart3 } from 'lucide-react'
+import { JobMatchSection } from '../analysis/job-match-section'
 
 interface AnalysisData {
   id: string
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
   overallScore?: number | null
+  jobMatchScore?: number | null
   strengths?: string[]
   improvements?: string[]
   missingSkills?: string[]
@@ -19,6 +21,19 @@ interface AnalysisData {
     score: number
     feedback: string
   }>
+  jobMatchAnalysis?: {
+    skillsMatch: {
+      matched: string[]
+      missing: string[]
+      matchPercentage: number
+    }
+    experienceAlignment: {
+      score: number
+      feedback: string
+    }
+    recommendationsForRole: string[]
+    strengthsForRole: string[]
+  }
   jobDescription?: string | null
   errorMessage?: string | null
   createdAt: string
@@ -258,6 +273,15 @@ export function AnalysisSection({ analysis }: AnalysisSectionProps) {
           </div>
         </motion.div>
       )}
+
+      {/* Job Match Analysis */}
+      <JobMatchSection 
+        data={{
+          jobMatchScore: analysis.jobMatchScore,
+          jobMatchAnalysis: analysis.jobMatchAnalysis,
+          jobDescription: analysis.jobDescription,
+        }}
+      />
 
       {/* Section Analysis */}
       {analysis.sectionsAnalysis && (
