@@ -1,19 +1,17 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { FileText, TrendingUp, Clock, Star, Upload, BarChart3, Users, Zap, Loader2 } from 'lucide-react'
+import { FileText, TrendingUp, Clock, Star, Upload, BarChart3, Zap, Loader2 } from 'lucide-react'
 import { DashboardCard } from '@/components/dashboard/dashboard-card'
 import { ProgressRing } from '@/components/charts/progress-ring'
 import { EnhancedFileUpload } from '@/components/upload/enhanced-file-upload'
 import { GuestSessionModal } from '@/components/modals/guest-session-modal'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useMyResumes, useSessionInfo, useIsSessionValid, useUploadResume, useReuploadResume, useCreateGuestSession, useAnalyzeResume, useAnalysisResult } from '@/lib/api/queries'
+import { useMyResumes, useIsSessionValid, useUploadResume, useReuploadResume, useCreateGuestSession, useAnalyzeResume, useAnalysisResult } from '@/lib/api/queries'
 import { AnalysisSection } from '@/components/dashboard/analysis-section'
 import { toast } from 'sonner'
 
 export default function DashboardPage() {
-  const router = useRouter()
   const [isGuestModalOpen, setIsGuestModalOpen] = useState(false)
   const [processingFiles, setProcessingFiles] = useState(false)
   const [analyzingResumes, setAnalyzingResumes] = useState<Set<string>>(new Set())
@@ -27,7 +25,7 @@ export default function DashboardPage() {
   
   // Check if user has a guest session
   const hasGuestSession = isValid && !!sessionInfo
-  const resumes = resumesData?.data?.data || []
+  const resumes = resumesData?.data || []
 
   useEffect(() => {
     const hasProcessingAnalysis = resumes.some((resume: any) => 
@@ -42,11 +40,13 @@ export default function DashboardPage() {
 
       return () => clearInterval(interval);
     }
+    
+    return undefined;
   }, [resumes, refetchResumes]);
   const hasResumes = resumes.length > 0
   
   // Get the first completed analysis for display
-  const completedResume = resumes.find(resume => resume.analysis?.status === 'COMPLETED')
+  const completedResume = resumes.find((resume: any) => resume.analysis?.status === 'COMPLETED')
   const { data: analysisData } = useAnalysisResult(completedResume?.analysis?.id || '', !!completedResume?.analysis?.id)
 
   // Debug logging - remove in production
@@ -91,7 +91,7 @@ export default function DashboardPage() {
     // If no guest session, create one first
     if (!hasGuestSession) {
       try {
-        await createGuestMutation.mutateAsync()
+        await createGuestMutation.mutateAsync('')
       } catch (error) {
         console.error('Failed to create guest session:', error)
         toast.error('Failed to create session. Please try again.')
@@ -141,8 +141,8 @@ export default function DashboardPage() {
           throw uploadError // Re-throw to stop processing
         }
         
-        // The response is nested: uploadResult.data.data.resumeId
-        const resumeId = uploadResult?.data?.data?.resumeId || existingResume?.id
+        // The response is nested: uploadResult.data.resumeId
+        const resumeId = uploadResult?.data?.resumeId || existingResume?.id
         
         // Trigger analysis after successful upload/reupload
         if (resumeId) {
@@ -154,7 +154,7 @@ export default function DashboardPage() {
           try {
             const analysisResult = await analyzeResumeMutation.mutateAsync({ 
               resumeId,
-              jobDescription: jobDescription || undefined
+              ...(jobDescription && { jobDescription })
             })
             console.log('Analysis started:', analysisResult)
           } catch (error) {
@@ -183,7 +183,7 @@ export default function DashboardPage() {
     }
   }
 
-  const handleSessionCreated = (sessionData: { id: string; name: string; expiresAt: string }) => {
+  const handleSessionCreated = (_sessionData: { id: string; name: string; expiresAt: string }) => {
     setIsGuestModalOpen(false)
     // The session will be automatically detected by the useIsSessionValid hook
   }
@@ -192,15 +192,15 @@ export default function DashboardPage() {
   // Calculate actual stats from resumes data - only if we have data loaded
   const dashboardData = (hasResumes && !isLoadingResumes) ? {
     totalResumes: resumes.length,
-    averageScore: Math.round(resumes.reduce((acc, resume) => {
+    averageScore: Math.round(resumes.reduce((acc: number, resume: any) => {
       if (resume.analysis?.overallScore) {
         // Convert 4.2/5 to 84%
         const score = parseFloat(resume.analysis.overallScore.toString())
         return acc + Math.round((score / 5) * 100)
       }
       return acc
-    }, 0) / resumes.filter(resume => resume.analysis?.overallScore).length) || 0,
-    improvements: resumes.filter(resume => resume.analysis).length,
+    }, 0) / resumes.filter((resume: any) => resume.analysis?.overallScore).length) || 0,
+    improvements: resumes.filter((resume: any) => resume.analysis).length,
     timeSpent: '0h', // Could calculate from analysis creation dates
   } : null
 
@@ -336,7 +336,7 @@ export default function DashboardPage() {
               >
                 <h3 className="text-xl font-semibold text-white mb-4">Your Resumes</h3>
                 <div className="space-y-4">
-                  {resumes.slice(0, 3).map((resume, index) => (
+                  {resumes.slice(0, 3).map((resume: any, index: number) => (
                     <motion.div
                       key={resume.id}
                       initial={{ opacity: 0, x: -20 }}

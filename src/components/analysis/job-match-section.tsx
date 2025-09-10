@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { Target, TrendingUp, CheckCircle, XCircle, AlertTriangle, Lightbulb } from 'lucide-react'
+import { Target, TrendingUp, CheckCircle, XCircle, Lightbulb } from 'lucide-react'
 
 interface JobMatchData {
   jobMatchScore?: number
