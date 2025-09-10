@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         'x-guest-token': guestToken,
       },
       cache: 'no-store',
-    }))
+    })
 
     console.log('API Proxy: Backend response:', response.status, response.statusText)
 
