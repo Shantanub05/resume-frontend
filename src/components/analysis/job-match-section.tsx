@@ -17,8 +17,8 @@ interface JobMatchData {
     }
     recommendationsForRole: string[]
     strengthsForRole: string[]
-  }
-  jobDescription?: string | null
+  } | undefined
+  jobDescription?: string | null | undefined
 }
 
 interface JobMatchSectionProps {

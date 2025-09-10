@@ -5,7 +5,6 @@ import {
   type UploadResumeResponse,
   type GuestSessionResponse
 } from './client'
-import { toast } from 'sonner'
 
 // Query Keys
 export const queryKeys = {
@@ -80,9 +79,9 @@ export function useAnalysisResult(analysisId: string, enabled = true) {
     queryKey: queryKeys.analysis(analysisId),
     queryFn: () => apiClient.getAnalysisResult(analysisId),
     enabled: enabled && !!analysisId,
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
       // If analysis is still processing, poll every 3 seconds
-      const analysis = data?.data
+      const analysis = query.state.data?.data
       const isProcessing = analysis?.status && ['PENDING', 'PROCESSING'].includes(analysis.status)
       
       console.log('Analysis polling check:', {

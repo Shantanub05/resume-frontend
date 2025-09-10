@@ -24,7 +24,7 @@ export function HeroSection() {
     setIsGuestModalOpen(true)
   }
 
-  const handleSessionCreated = (sessionData: { id: string; name: string; expiresAt: string }) => {
+  const handleSessionCreated = (_sessionData: { id: string; name: string; expiresAt: string }) => {
     setIsGuestModalOpen(false)
     // Navigate to dashboard with session data
     router.push('/dashboard')

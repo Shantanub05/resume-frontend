@@ -73,7 +73,7 @@ export function AnalysisSection({ analysis }: AnalysisSectionProps) {
     keys: Object.keys(analysis)
   })
 
-  const overallScore = parseFloat(analysis.overallScore) || 0
+  const overallScore = analysis.overallScore || 0
   const scorePercentage = Math.round((overallScore / 5) * 100)
 
   return (
@@ -277,7 +277,7 @@ export function AnalysisSection({ analysis }: AnalysisSectionProps) {
       {/* Job Match Analysis */}
       <JobMatchSection 
         data={{
-          jobMatchScore: analysis.jobMatchScore,
+          ...(typeof analysis.jobMatchScore === 'number' && { jobMatchScore: analysis.jobMatchScore }),
           jobMatchAnalysis: analysis.jobMatchAnalysis,
           jobDescription: analysis.jobDescription,
         }}
