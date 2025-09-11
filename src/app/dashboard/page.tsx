@@ -25,10 +25,10 @@ export default function DashboardPage() {
   
   // Check if user has a guest session
   const hasGuestSession = isValid && !!sessionInfo
-  const resumes = resumesData?.data || []
+  const resumes = Array.isArray(resumesData?.data) ? resumesData.data : []
 
   useEffect(() => {
-    const hasProcessingAnalysis = resumes.some((resume: any) => 
+    const hasProcessingAnalysis = Array.isArray(resumes) && resumes.some((resume: any) => 
       resume.analysis && ['PENDING', 'PROCESSING'].includes(resume.analysis.status)
     );
 
@@ -43,10 +43,10 @@ export default function DashboardPage() {
     
     return undefined;
   }, [resumes, refetchResumes]);
-  const hasResumes = resumes.length > 0
+  const hasResumes = Array.isArray(resumes) && resumes.length > 0
   
   // Get the first completed analysis for display
-  const completedResume = resumes.find((resume: any) => resume.analysis?.status === 'COMPLETED')
+  const completedResume = Array.isArray(resumes) ? resumes.find((resume: any) => resume.analysis?.status === 'COMPLETED') : undefined
   const { data: analysisData } = useAnalysisResult(completedResume?.analysis?.id || '', !!completedResume?.analysis?.id)
 
   // Debug logging - remove in production
@@ -62,7 +62,7 @@ export default function DashboardPage() {
 
   // Clean up analyzing state when analysis completes
   useEffect(() => {
-    if (resumes && resumes.length > 0) {
+    if (Array.isArray(resumes) && resumes.length > 0) {
       setAnalyzingResumes(prev => {
         const newSet = new Set(prev)
         let changed = false
@@ -109,7 +109,7 @@ export default function DashboardPage() {
     
     try {
       // If user has existing resume, reupload it; otherwise upload new
-      const existingResume = resumes[0] // Since we only allow one resume now
+      const existingResume = Array.isArray(resumes) ? resumes[0] : null // Since we only allow one resume now
       
       for (const file of files) {
         let uploadResult
@@ -190,7 +190,7 @@ export default function DashboardPage() {
 
 
   // Calculate actual stats from resumes data - only if we have data loaded
-  const dashboardData = (hasResumes && !isLoadingResumes) ? {
+  const dashboardData = (hasResumes && !isLoadingResumes && Array.isArray(resumes)) ? {
     totalResumes: resumes.length,
     averageScore: Math.round(resumes.reduce((acc: number, resume: any) => {
       if (resume.analysis?.overallScore) {
@@ -336,7 +336,7 @@ export default function DashboardPage() {
               >
                 <h3 className="text-xl font-semibold text-white mb-4">Your Resumes</h3>
                 <div className="space-y-4">
-                  {resumes.slice(0, 3).map((resume: any, index: number) => (
+                  {Array.isArray(resumes) && resumes.slice(0, 3).map((resume: any, index: number) => (
                     <motion.div
                       key={resume.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -385,7 +385,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </motion.div>
-                  ))}
+                  )) || null}
                 </div>
               </motion.div>
             ) : (
