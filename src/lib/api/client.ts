@@ -117,9 +117,9 @@ class ApiClient {
   }
 
   async analyzeResume(resumeId: string, jobDescription?: string): Promise<AnalysisResponse> {
-    return this.request('/resumes/analyze', {
+    return this.request(`/resumes/${resumeId}/analyze`, {
       method: 'POST',
-      body: JSON.stringify({ resumeId, jobDescription }),
+      body: JSON.stringify({ jobDescription }),
     })
   }
 
