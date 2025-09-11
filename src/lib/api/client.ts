@@ -63,49 +63,16 @@ class ApiClient {
 
   // Guest Session API
   async createGuestSession(sessionName?: string): Promise<GuestSessionResponse> {
-    // Use Next.js API route proxy to avoid CORS issues
-    const response = await fetch('/api/guest/session', {
+    return this.request('/guest/session', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ name: sessionName }),
     })
-
-    console.log('API Response:', response.status, response.statusText)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API Error:', errorText)
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    console.log('API Success: /api/guest/session ✓')
-    return data
   }
 
   async getSessionInfo(): Promise<SessionInfoResponse> {
-    // Use Next.js API route proxy to avoid CORS issues and handle response structure
-    const response = await fetch('/api/guest/session/info', {
+    return this.request('/guest/session/info', {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-guest-token': localStorage.getItem('guest-token') || '',
-      },
     })
-
-    console.log('API Response:', response.status, response.statusText)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API Error:', errorText)
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    console.log('API Success: /api/guest/session/info ✓')
-    return data
   }
 
   async canUpload(): Promise<CanUploadResponse> {
@@ -134,41 +101,11 @@ class ApiClient {
       formData.append('title', title)
     }
 
-    // Use Next.js API route proxy to avoid CORS issues
-    const response = await fetch(`/api/resumes/${resumeId}/reupload`, {
+    return this.request(`/resumes/${resumeId}/reupload`, {
       method: 'POST',
-      headers: {
-        'x-guest-token': localStorage.getItem('guest-token') || '',
-      },
       body: formData,
+      headers: {}, // Remove Content-Type to let browser set it for multipart
     })
-
-    console.log('API Response:', response.status, response.statusText)
-
-    if (!response.ok) {
-      let errorMessage = `HTTP error! status: ${response.status}`
-      try {
-        const errorData = await response.json()
-        console.error('API Error:', errorData)
-        // Extract the actual error message from backend response
-        errorMessage = errorData.message || errorData.error || errorMessage
-      } catch (parseError) {
-        // If JSON parsing fails, try text
-        try {
-          const errorText = await response.text()
-          console.error('API Error (text):', errorText)
-          errorMessage = errorText || errorMessage
-        } catch {
-          console.error('API Error: Could not parse error response')
-        }
-      }
-      
-      throw new Error(errorMessage)
-    }
-
-    const data = await response.json()
-    console.log('API Success: /api/resumes/:id/reupload ✓')
-    return data
   }
 
   async getMyResumes(): Promise<MyResumesResponse> {
@@ -180,73 +117,22 @@ class ApiClient {
   }
 
   async analyzeResume(resumeId: string, jobDescription?: string): Promise<AnalysisResponse> {
-    // Use Next.js API route proxy to avoid CORS issues
-    const response = await fetch('/api/resumes/analyze', {
+    return this.request('/resumes/analyze', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-guest-token': localStorage.getItem('guest-token') || '',
-      },
       body: JSON.stringify({ resumeId, jobDescription }),
     })
-
-    console.log('API Response:', response.status, response.statusText)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API Error:', errorText)
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    console.log('API Success: /api/resumes/analyze ✓')
-    return data
   }
 
   async getAnalysisResult(analysisId: string): Promise<AnalysisResultResponse> {
-    // Use Next.js API route proxy to avoid CORS issues
-    const response = await fetch(`/api/resumes/analysis/${analysisId}`, {
+    return this.request(`/resumes/analysis/${analysisId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-guest-token': localStorage.getItem('guest-token') || '',
-      },
     })
-
-    console.log('API Response:', response.status, response.statusText)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API Error:', errorText)
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    console.log('API Success: /api/resumes/analysis/:analysisId ✓')
-    return data
   }
 
   async getQuickAnalysis(resumeId: string): Promise<QuickAnalysisResponse> {
-    // Use Next.js API route proxy to avoid CORS issues
-    const response = await fetch(`/api/resumes/${resumeId}/quick-analysis`, {
+    return this.request(`/resumes/${resumeId}/quick-analysis`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-guest-token': localStorage.getItem('guest-token') || '',
-      },
     })
-
-    console.log('API Response:', response.status, response.statusText)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API Error:', errorText)
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    console.log('API Success: /api/resumes/:id/quick-analysis ✓')
-    return data
   }
 }
 
