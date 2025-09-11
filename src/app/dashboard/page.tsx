@@ -26,7 +26,7 @@ export default function DashboardPage() {
   
   // Check if user has a guest session
   const hasGuestSession = isValid && !!sessionInfo
-  const resumes = Array.isArray(resumesData?.data) ? resumesData.data : []
+  const resumes = Array.isArray(resumesData?.data?.data) ? resumesData.data.data : []
 
   useEffect(() => {
     const hasProcessingAnalysis = Array.isArray(resumes) && resumes.some((resume: any) => 
@@ -57,8 +57,12 @@ export default function DashboardPage() {
     sessionInfo, 
     hasResumes, 
     resumesData,
+    resumesDataKeys: resumesData ? Object.keys(resumesData) : 'null',
+    resumesDataStructure: resumesData?.data?.data ? `Array: ${Array.isArray(resumesData.data.data)}, Length: ${resumesData.data.data.length}` : 'no data',
     resumesError,
-    isLoadingResumes 
+    isLoadingResumes,
+    resumes: resumes,
+    resumesLength: resumes.length
   })
 
   // Clean up analyzing state when analysis completes
@@ -146,6 +150,11 @@ export default function DashboardPage() {
               file, 
               title: file.name.replace(/\.[^/.]+$/, '') // Remove extension
             })
+            
+            // Force refetch resumes to ensure UI updates
+            await refetchResumes()
+            console.log('Resumes refetched after upload')
+            
             toast.success('Resume uploaded successfully!')
           }
         } catch (uploadError) {
