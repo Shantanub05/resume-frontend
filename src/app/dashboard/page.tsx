@@ -26,7 +26,23 @@ export default function DashboardPage() {
   
   // Check if user has a guest session
   const hasGuestSession = isValid && !!sessionInfo
-  const resumes = Array.isArray(resumesData?.data?.data) ? resumesData.data.data : []
+  // Handle both local and Railway response structures
+  const resumes = (() => {
+    if (!resumesData?.data) return []
+    
+    // Check if it's the Railway format (nested object with data property)
+    if (typeof resumesData.data === 'object' && !Array.isArray(resumesData.data) && 'data' in resumesData.data) {
+      const nestedData = (resumesData.data as any).data
+      return Array.isArray(nestedData) ? nestedData : []
+    }
+    
+    // Local format: direct array
+    if (Array.isArray(resumesData.data)) {
+      return resumesData.data
+    }
+    
+    return []
+  })()
 
   useEffect(() => {
     const hasProcessingAnalysis = Array.isArray(resumes) && resumes.some((resume: any) => 
@@ -58,7 +74,7 @@ export default function DashboardPage() {
     hasResumes, 
     resumesData,
     resumesDataKeys: resumesData ? Object.keys(resumesData) : 'null',
-    resumesDataStructure: resumesData?.data?.data ? `Array: ${Array.isArray(resumesData.data.data)}, Length: ${resumesData.data.data.length}` : 'no data',
+    resumesDataStructure: resumes ? `Array: ${Array.isArray(resumes)}, Length: ${resumes.length}` : 'no data',
     resumesError,
     isLoadingResumes,
     resumes: resumes,

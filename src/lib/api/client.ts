@@ -185,7 +185,19 @@ export interface UploadResumeResponse extends ApiResponse {
 }
 
 export interface MyResumesResponse extends ApiResponse {
-  data: {
+  data: Array<{
+    id: string
+    title: string
+    originalFilename: string
+    fileSize: number
+    createdAt: string
+    analysis: {
+      id: string
+      status: string
+      overallScore: number
+      createdAt: string
+    } | null
+  }> | {
     success: boolean
     data: Array<{
       id: string
