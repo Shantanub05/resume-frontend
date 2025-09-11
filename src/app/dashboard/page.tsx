@@ -7,7 +7,7 @@ import { ProgressRing } from '@/components/charts/progress-ring'
 import { EnhancedFileUpload } from '@/components/upload/enhanced-file-upload'
 import { GuestSessionModal } from '@/components/modals/guest-session-modal'
 import { useState, useEffect } from 'react'
-import { useMyResumes, useIsSessionValid, useUploadResume, useReuploadResume, useCreateGuestSession, useAnalyzeResume, useAnalysisResult } from '@/lib/api/queries'
+import { useMyResumes, useIsSessionValid, useSessionInfo, useUploadResume, useReuploadResume, useCreateGuestSession, useAnalyzeResume, useAnalysisResult } from '@/lib/api/queries'
 import { AnalysisSection } from '@/components/dashboard/analysis-section'
 import { toast } from 'sonner'
 
@@ -18,6 +18,7 @@ export default function DashboardPage() {
   
   const { isValid, sessionInfo } = useIsSessionValid()
   const { data: resumesData, isLoading: isLoadingResumes, isError: resumesError, refetch: refetchResumes } = useMyResumes()
+  const { refetch: refetchSessionInfo } = useSessionInfo(true)
   const uploadResumeMutation = useUploadResume()
   const reuploadResumeMutation = useReuploadResume()
   const analyzeResumeMutation = useAnalyzeResume()
@@ -91,7 +92,21 @@ export default function DashboardPage() {
     // If no guest session, create one first
     if (!hasGuestSession) {
       try {
-        await createGuestMutation.mutateAsync('')
+        const sessionResult = await createGuestMutation.mutateAsync('')
+        console.log('Guest session created successfully:', sessionResult)
+        
+        // Wait a moment for the token to be saved
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // Verify the session was created and token was stored
+        const token = localStorage.getItem('guest-token')
+        if (!token) {
+          throw new Error('Session token not found after creation')
+        }
+        
+        // Refetch session info to validate the new session
+        await refetchSessionInfo()
+        console.log('Session validated, proceeding with upload...')
       } catch (error) {
         console.error('Failed to create guest session:', error)
         toast.error('Failed to create session. Please try again.')
